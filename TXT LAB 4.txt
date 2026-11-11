@@ -1,0 +1,163 @@
+PRÁCTICA 1: 
+
+DOS SITIOS WEB CON HOSTS VIRTUALES EN ROCKY LINUX
+Nombre: Velissa Santana
+Matrícula: 2025-1408
+Materia: Linux
+
+
+1.INSTALAR APACHE
+sudo dnf install httpd -y
+sudo systemctl enable --now httpd
+
+
+2.REAR SITIO WEB «HOLA MUNDO»
+sudo mkdir -p /var/www/holamundo
+sudo nano /var/www/holamundo/index.html
+
+
+Pegar:
+<html>
+<body>
+<h1>Hola Mundo</h1>
+</body>
+</html>
+
+
+Guardar: Ctrl+O, Enter, Ctrl+X.
+
+
+3.HOST VIRTUAL EN PUERTO 80
+sudo nano /etc/httpd/conf.d/holamundo.conf
+
+
+Pegar:
+<VirtualHost *:80>
+DocumentRoot /var/www/holamundo
+<Directory /var/www/holamundo>
+Require all granted
+</Directory>
+</VirtualHost>
+ 
+
+4.CREAR SITIO WEB DE DATOS PERSONALES
+sudo mkdir -p /var/www/velissa
+sudo nano /var/www/velissa/index.html
+
+
+Pegar:
+<html>
+<body>
+<h1>Velissa Santana</h1>
+<p>Matricula: 2025-1408</p>
+<p>Materia: Linux</p>
+</body>
+</html>
+
+
+5.HOST VIRTUAL EN PUERTO 8080
+sudo nano /etc/httpd/conf.d/velissa.conf
+
+
+Pegar:
+Listen 8080
+<VirtualHost *:8080>
+DocumentRoot /var/www/velissa
+<Directory /var/www/velissa>
+Require all granted
+</Directory>
+</VirtualHost>
+
+
+6.AUTORIZAR PUERTO 8080 EN SELINUX (SI ESTÁ ACTIVO)
+sudo dnf install policycoreutils-python-utils -y
+sudo semanage port -l | grep http_port_t
+
+
+Si 8080 NO aparece en la lista:
+sudo semanage port -a -t http_port_t -p tcp 8080
+
+
+Si aparece en otra categoría, usar en lugar de -a:
+ 
+ 
+PRACTICA 2 - SERVIDOR DE CORREOS POSTFIX (ROCKY LINUX)
+Nombre: Velissa Santana Matricula: 2025-1408
+
+1.Instalar Postfix
+sudo dnf install postfix -y
+sudo systemctl enable --now postfix sudo systemctl status postfix
+
+2.	Instalar herramienta de envio sudo dnf install s-nail -y
+
+3.Enviar correo de ejemplo
+Destinatario: os3conadrian@gmail.com Asunto: MambruSeFueALaGuerra
+Cuerpo: Velissa Santana - Matricula: 2025-1408
+
+
+echo "Velissa Santana - Matricula: 2025-1408" | mail -s "MambruSeFueALaGuerra" os3conadrian@gmail.com
+
+
+4.Verificar cola y registros sudo postqueue -p
+sudo journalctl -u postfix -n 50 --no-pagerPRACTICA 3 - CUPS Y UNA IMPRESORA VIRTUAL PDF EN ROCKY LINUX
+
+
+PRÁCTICA 3: SERVIDOR DE IMPRESIÓN CUPS (CENTOS STREAM 10)
+
+Objetivo:
+1. Instalar CUPS.
+2. Instalar y configurar una impresora virtual PDF.
+3. Agregar la impresora desde Windows mediante la IP del servidor.
+4. Imprimir un documento de Word y comprobar el PDF generado.
+
+PASO 1. INSTALAR Y CONFIGURAR CUPS EN CENTOS
+
+sudo dnf install -y cups
+sudo systemctl enable --now cups
+sudo cupsctl --remote-admin --remote-any --share-printers
+sudo firewall-cmd --permanent --add-service=ipp
+sudo firewall-cmd --reload
+sudo systemctl restart cups
+ip -4 addr
+sudo ss -lntp | grep 631
+
+PASO 2. INTENTAR INSTALAR LA IMPRESORA PDF
+
+sudo dnf install -y epel-release
+sudo dnf install -y cups-pdf
+sudo systemctl restart cups
+lpstat -p -d
+
+ATENCIÓN: cups-pdf puede no estar disponible en CentOS Stream 10. Si aparece "No match for argument: cups-pdf", detenerse: todavía NO hay impresora PDF instalada y se requiere un método compatible. No continuar suponiendo que existe.
+
+PASO 3. ACCESO A CUPS DESDE WINDOWS
+
+En Chrome abrir:
+http://IP_DEL_SERVIDOR:631
+
+Reemplazar IP_DEL_SERVIDOR por la IP de CentOS accesible desde Windows (preferiblemente la interfaz Host-only si ambas máquinas comparten VMnet1).
+
+En CUPS: Administration > Manage Printers.
+Verificar que la impresora PDF exista y esté compartida.
+
+PASO 4. AGREGAR IMPRESORA EN WINDOWS
+
+Configuración > Bluetooth y dispositivos > Impresoras y escáneres > Agregar dispositivo > Agregar manualmente.
+Elegir la opción para agregar mediante dirección URL e introducir:
+http://IP_DEL_SERVIDOR:631/printers/PDF
+
+IMPORTANTE: "PDF" es un ejemplo. Usar el nombre real de la cola que aparece en CUPS. Windows puede requerir un controlador IPP compatible.
+
+PASO 5. PRUEBA DESDE MICROSOFT WORD
+
+1. Abrir Word en Windows.
+2. Escribir: Prueba de impresión CUPS - Velissa.
+3. Presionar Ctrl + P.
+4. Elegir la impresora PDF de CentOS.
+5. Pulsar Imprimir.
+
+PASO 6. COMPROBAR EN CENTOS
+
+lpstat -t
+sudo find /var/spool/cups-pdf -type f -name '*.pdf'
+
